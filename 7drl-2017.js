@@ -13,9 +13,9 @@ var imgUrl = cdnUrl + "data/core/images/";
 var unitUrl = imgUrl + "units/";
 
 var map = `
-w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w 
-w w w w w w w w w w w w w w w 
+w s w w w w w w w w w w w w w 
+ w s s w w w w w w w w w w w 
+w w s w w w w w w w w w w w w 
  w w w w w w w w w w w w w w 
 w w w w w w w w w w w w w w w 
  w w w w w w w w w w w w w w 
@@ -46,20 +46,29 @@ var terrain = {
   }
 };
 
-function landscapeTiles() {
-  result = [];
-  for(var y = 0; y < map.length; ++y) {
-    for(x = y & 1; x < map[y].length; ++x) {
-      result.push(Object.assign({x:x, y:y}, makeTerrain(map[y][x])));
-    }
+var landscapeTiles = [];
+for(var y = 0; y < map.length; ++y) {
+  for(var x = y & 1; x < map[y].length; ++x) {
+    landscapeTiles.push(Object.assign({x:x, y:y}, terrain[map[y][x]]));
   }
-  return result;
+}
+
+function terrainToImg(terrain) {
+  return ['img', {
+    src: imgUrl + 'terrain/' + terrain.img + '.png',
+    style: {
+      position: 'absolute',
+      top: terrain.y * 72,
+      left: terrain.x * 72
+    }
+  }];
 }
 // Render the ui reactively
 
 ss.html(() => 
   ['div',
-   map[0][0],
+   JSON.stringify(landscapeTiles),
+   ['div'].concat(landscapeTiles.map(terrainToImg)),
     ["img", {src: unitUrl + "dwarves/fighter.png"}],
   ['h1', 'Hello world'],
   ['p', 'Count: ', ss.getJS('count', 0)],

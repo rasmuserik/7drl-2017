@@ -161,7 +161,7 @@ ss.rerun('updateGame',
             
 ss.html(() => 
   ['div',
-   {onClick: ss.event('click', {extract: ['clientX', 'clientY']})},
+   {onMouseDown: ss.event('click', {extract: ['clientX', 'clientY']})},
    ['div', { style: {
      position: 'relative', 
      display: 'inline-block',
@@ -171,7 +171,7 @@ ss.html(() =>
    ['div'].concat(filterPos(landscapeTiles, ss.get('game.pos')).map(terrainToImg)),
    ['div'].concat(filterPos(units, ss.get('game.pos')).map(unitToImg)),
    ['div'].concat(units.concat(landscapeTiles)
-                  .map(o => Object.assign({debug: [o.x, o.y]}, o))
+                  //.map(o => Object.assign({debug: [o.x, o.y]}, o))
                   .map(debugImg))
    ],
    ['div', {style: {
@@ -190,9 +190,8 @@ ss.html(() =>
 // Handler for button clicks
 
 ss.handle('click', o => {
-  ss.setJS('game.info', o);
-  //ss.setJS('game.info.x', o.clientX / 27 | 0);
-  //ss.setJS('game.info.x', o.clientX / 27 | 0);
+  ss.setJS('game.pos.x', ss.getJS('game.pos.x') + o.clientX / 27 - 39 | 0);
+  ss.setJS('game.pos.y', ss.getJS('game.pos.y') + o.clientY / 36 - 9 | 0);
 });
 ss.handle('increment', () => 
   ss.setJS('count', ss.getJS('count', 0) + 1));

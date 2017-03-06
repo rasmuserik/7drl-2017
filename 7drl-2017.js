@@ -17,20 +17,20 @@ var map = `
 w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
  w s w w w w g w w w w w w w w w w w w w w w w w w w w w w w
 w s s s sds s g g g g g w w w w w w w w w w w w w w w w w w 
- w s s s s s s g g g w w w w w w w w w w w w w w w w w w w w
-w s g g m mdm s g g g w w w w w w w w w w w w w w w w w w w 
- w s gWg mdl m s g g w w w w w w w w w w w w w w w w w w w w
-w w gWg g m mdm g g g w w w w w w w w w w w w w w w w w w w 
- w g g g m m ssg g g w w w w w w w w w w w w w w w w w w w w
+ w s s s s s s g g g w w w w w w w g w w w w w w w w w w w w
+w s g g m mdm s g g g w w w w w g g g w w w w w w w w w w w 
+ w s gWg mdl m s g g w w w w w g g g g w w w w w w w w w w w
+w w gWg g m mdm g g g w w w w g g w w w w w w w w w w w w w 
+ w g g g m m ssg g g w w w w w g w w w w w w w w w w w w w w
 d d d d g m g g g g w w w w w w w w w w w w w w w w w w w w 
  w g g dWg g g g w w w w w w w w w w w w w w w w w w w w w w
 w w g g d g g g w w w w w w w w w w w w w w w w w w w w w w 
  w w g w d w w w w w w w w w w w w w w w w w w w w w w w w w
 w w w w w d w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w d w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w d w w w w w w w m w w w w w w w w w w w w w w w 
+ w w w w w w d d d d d d d d m m w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w m w w w w w w w w w w w w w w 
  w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
 w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
  w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
@@ -47,7 +47,7 @@ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
 
 var terrain = {
   g: {
-    img: 'grass/dry',
+    img: 'grass/green',
     passable: true
   },
   w: {
@@ -95,7 +95,7 @@ var units = [];
 for(var y = 0; y < map.length; ++y) {
   for(var x = (y & 1) + 1; x < map[y].length; x += 2) {
     if(map[y][x] !== ' ') {
-      units.push(Object.assign({x:y*2, y:x}, unitObjs[map[y][x]]));
+      units.push(Object.assign({x:y*2, y:x - 1}, unitObjs[map[y][x]]));
     }
   }
 }
@@ -106,7 +106,7 @@ function unitToImg(unit) {
     style: {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: unit.y * 36 - 16 - 42,
+      top: unit.y * 36,
       left: unit.x * 27
     }
   }];
@@ -122,7 +122,7 @@ function debugImg(o) {
       textAlign: 'center',
       fontSize: 10,
       textShadow: '1px 1px 2px black',
-      top: o.y * 36 - 48,
+      top: o.y * 36 - 36,
       left: o.x * 27
     }
   }, (o.debug || "").toString()];
@@ -132,9 +132,10 @@ function terrainToImg(terrain) {
   return ['img', {
     src: imgUrl + 'terrain/' + terrain.img + '.png',
     style: {
+      onClick: ss.event('increment', {data: terrain}),
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: terrain.y * 36 - 16,
+      top: terrain.y * 36,
       left: terrain.x * 27
     }
   }];
@@ -142,19 +143,32 @@ function terrainToImg(terrain) {
 
 function filterPos(objs, p) {
   return objs.filter(o => {
-    var dx = o.x - p.x;
-    var dy = o.y - p.y;
+    var dx = o.x - (p.x & ~1);
+    var dy = o.y - (p.y & ~1);
     return dx * dx + dy * dy < 48;
   });
 }
 
+ss.handle('click', (a, b) => ss.set('game.event', a));
 // Render the ui reactively
-
+setInterval(() => ss.set('game.time', Date.now()), 100);
+ss.rerun('updateGame', 
+() => ss.set('game.pos', {
+  x: ss.get('game.time') / 1000 % 21 + 8,
+  y: ss.get('game.time') / 1000 % 30 + 8
+}));
+            
 ss.html(() => 
   ['div',
-   ['div', {style: {position: 'relative', display: 'inline-block', background: 'red'}} ,
-   ['div'].concat(filterPos(landscapeTiles, {x:8,y:8}).map(terrainToImg)),
-   ['div'].concat(filterPos(units, {x:8, y:8}).map(unitToImg)),
+   {onClick: ss.event('increment')},
+   ['div', { style: {
+     position: 'relative', 
+     display: 'inline-block',
+     top: 36 * 8 - 36 * ss.get('game.pos.y'),
+     left: 27 * 8 - 27 * ss.get('game.pos.x')
+   }} ,
+   ['div'].concat(filterPos(landscapeTiles, ss.get('game.pos')).map(terrainToImg)),
+   ['div'].concat(filterPos(units, ss.get('game.pos')).map(unitToImg)),
    ['div'].concat(units.concat(landscapeTiles).map(debugImg))
    ],
    ['div', {style: {
@@ -165,7 +179,7 @@ ss.html(() =>
      textShadow: '1px 1px 2px black',
    }} ,
   ['h1', '7DRL'],
-   JSON.stringify(units),
+   JSON.stringify(ss.get('game')),
   ['p', 'Count: ', ss.getJS('count', 0)],
   ['button', {onClick: ss.event('increment')},
     'Click']]]);

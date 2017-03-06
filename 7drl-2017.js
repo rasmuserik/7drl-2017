@@ -141,7 +141,8 @@ function terrainToImg(terrain) {
   }];
 }
 
-function filterPos(objs, p) {
+function filterPos(objs) {
+  var p = ss.get('game.pos');
   return objs.filter(o => {
     var dx = o.x - p.x | 0;
     var dy = o.y - p.y | 0;
@@ -168,10 +169,10 @@ ss.html(() =>
      top: 36 * 8 - 36 * ss.get('game.pos.y'),
      left: 27 * 8 - 27 * ss.get('game.pos.x')
    }} ,
-   ['div'].concat(filterPos(landscapeTiles, ss.get('game.pos')).map(terrainToImg)),
-   ['div'].concat(filterPos(units, ss.get('game.pos')).map(unitToImg)),
-   ['div'].concat(units.concat(landscapeTiles)
-                  //.map(o => Object.assign({debug: [o.x, o.y]}, o))
+   ['div'].concat(filterPos(landscapeTiles).map(terrainToImg)),
+   ['div'].concat(filterPos(units).map(unitToImg)),
+   ['div'].concat(filterPos(units.concat(landscapeTiles))
+                  .map(o => Object.assign({debug: [o.x, o.y]}, o))
                   .map(debugImg))
    ],
    ['div', {style: {
@@ -182,16 +183,27 @@ ss.html(() =>
      textShadow: '1px 1px 2px black',
    }} ,
   ['h1', '7DRL'],
-   JSON.stringify(ss.get('game')),
+   JSON.stringify(ss.get('game')), ['br'],
+   JSON.stringify(ss.get('ui.bounds')),
   ['p', 'Count: ', ss.getJS('count', 0)],
   ['button', {onClick: ss.event('increment')},
     'Click']]]);
 
+function toCoord(o) {
+  o.x = o.x & ~1;
+  o.y = (o.y & ~1) + (o.x & 2)/2;
+  return o;
+}
+
 // Handler for button clicks
 
 ss.handle('click', o => {
-  ss.setJS('game.pos.x', ss.getJS('game.pos.x') + o.clientX / 27 - 39 | 0);
-  ss.setJS('game.pos.y', ss.getJS('game.pos.y') + o.clientY / 36 - 9 | 0);
+  var x = (o.clientX - ss.get('ui.bounds.left')) | 0;
+  var y = (o.clientY - ss.get('ui.bounds.top')) | 0;
+  ss.set('game.pos', toCoord({
+    x: ss.get('game.pos.x') + x / 27 - 8,
+    y: ss.get('game.pos.y') + y / 27 - 11 
+  }));
 });
 ss.handle('increment', () => 
   ss.setJS('count', ss.getJS('count', 0) + 1));

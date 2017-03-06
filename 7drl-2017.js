@@ -48,7 +48,7 @@ var terrain = {
 
 var landscapeTiles = [];
 for(var y = 0; y < map.length; ++y) {
-  for(var x = y & 1; x < map[y].length; ++x) {
+  for(var x = y & 1; x < map[y].length; x += 2) {
     landscapeTiles.push(Object.assign({x:x, y:y}, terrain[map[y][x]]));
   }
 }
@@ -58,8 +58,8 @@ function terrainToImg(terrain) {
     src: imgUrl + 'terrain/' + terrain.img + '.png',
     style: {
       position: 'absolute',
-      top: terrain.y * 72,
-      left: terrain.x * 72
+      top: terrain.y * 36,
+      left: terrain.x * 54
     }
   }];
 }

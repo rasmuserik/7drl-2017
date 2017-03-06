@@ -15,36 +15,36 @@ var cdnHost = "https://raw.githubusercontent.com/";
 var cdnUrl = cdnHost + "wesnoth/wesnoth/a9d014665673beb2bd4ad2c0d0e3a1f019e920bc/";
 var imgUrl = cdnUrl + "data/core/images/";
 
-// The map of the tiles and initial units is just a text string,
-// that can be edited here.
-
 var map = `
-w w w w w w w w w w w w w w w 
- w s w w w w g w w w w w w w 
-w s s s sds s g g g g g w w w 
- w s s s s s s g g g w w w w 
-w s g g m mdm s g g g w w w w 
- w s gWg mdl m s g g w w w w 
-w w g g g m mdm g g g w w w w 
- w g g g m m ssg g g w w w w 
-d d d d g m g g g g w w w w w 
- w g g dWg g g g w w w w w w 
-w w g g d g g g w w w w w w w 
- w w g w d w w w w w w w w w 
-w w w w w d w w w w w w w w w 
- w w w w w w w w w w w w w w 
-w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w 
-w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w 
-w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w 
-w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w 
-w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w 
-w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w 
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w s w w w w g w w w w w w w w w w w w w w w w w w w w w w w
+w s s s sds s g g g g g w w w w w w w w w w w w w w w w w w 
+ w s s s s s s g g g w w w w w w w w w w w w w w w w w w w w
+w s g g m mdm s g g g w w w w w w w w w w w w w w w w w w w 
+ w s gWg mdl m s g g w w w w w w w w w w w w w w w w w w w w
+w w gWg g m mdm g g g w w w w w w w w w w w w w w w w w w w 
+ w g g g m m ssg g g w w w w w w w w w w w w w w w w w w w w
+d d d d g m g g g g w w w w w w w w w w w w w w w w w w w w 
+ w g g dWg g g g w w w w w w w w w w w w w w w w w w w w w w
+w w g g d g g g w w w w w w w w w w w w w w w w w w w w w w 
+ w w g w d w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w d w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
+w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
 `.split('\n').slice(1,-1);
 
 var terrain = {
@@ -89,7 +89,7 @@ var unitObjs = {
 var landscapeTiles = [];
 for(var y = 0; y < map.length; ++y) {
   for(var x = y & 1; x < map[y].length; x += 2) {
-    landscapeTiles.push(Object.assign({x:y, y:x}, terrain[map[y][x]]));
+    landscapeTiles.push(Object.assign({x:y, y:x, debug: [y,x]}, terrain[map[y][x]]));
   }
 }
 
@@ -114,6 +114,20 @@ function unitToImg(unit) {
   }];
 }
 
+function debugImg(o) {
+  return ['str',  { style: {
+      display: 'inline-block',
+      width: 72,
+      position: 'absolute',
+      transform: 'translate(-50%,-50%)',
+      color: '#0f0',
+      fontSize: 10,
+      textShadow: '1px 1px 2px black',
+      top: o.y * 36 - 36 - 16,
+      left: o.x * 54 - 36
+    }
+  }, (o.debug || "").toString()];
+}
 
 function terrainToImg(terrain) {
   return ['img', {
@@ -132,7 +146,8 @@ ss.html(() =>
   ['div',
    ['div', {style: {position: 'relative', display: 'inline-block', background: 'red'}} ,
    ['div'].concat(landscapeTiles.map(terrainToImg)),
-   ['div'].concat(units.map(unitToImg))
+   ['div'].concat(units.map(unitToImg)),
+   ['div'].concat(units.concat(landscapeTiles).map(debugImg))
    ],
    ['div', {style: {
      position: 'absolute', 

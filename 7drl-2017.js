@@ -87,7 +87,7 @@ var unitObjs = {
 var landscapeTiles = [];
 for(var y = 0; y < map.length; ++y) {
   for(var x = y & 1; x < map[y].length; x += 2) {
-    landscapeTiles.push(Object.assign({x:y, y:x, debug: [y,x]}, terrain[map[y][x]]));
+    landscapeTiles.push(Object.assign({x:y*2, y:x}, terrain[map[y][x]]));
   }
 }
 
@@ -95,7 +95,7 @@ var units = [];
 for(var y = 0; y < map.length; ++y) {
   for(var x = (y & 1) + 1; x < map[y].length; x += 2) {
     if(map[y][x] !== ' ') {
-      units.push(Object.assign({x:y, y:x}, unitObjs[map[y][x]]));
+      units.push(Object.assign({x:y*2, y:x}, unitObjs[map[y][x]]));
     }
   }
 }
@@ -107,7 +107,7 @@ function unitToImg(unit) {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
       top: unit.y * 36 - 16 - 42,
-      left: unit.x * 54
+      left: unit.x * 27
     }
   }];
 }
@@ -119,10 +119,11 @@ function debugImg(o) {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
       color: '#0f0',
+      textAlign: 'center',
       fontSize: 10,
       textShadow: '1px 1px 2px black',
-      top: o.y * 36 - 36 - 16,
-      left: o.x * 54 - 36
+      top: o.y * 36 - 48,
+      left: o.x * 27
     }
   }, (o.debug || "").toString()];
 }
@@ -134,17 +135,26 @@ function terrainToImg(terrain) {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
       top: terrain.y * 36 - 16,
-      left: terrain.x * 54
+      left: terrain.x * 27
     }
   }];
 }
+
+function filterPos(objs, p) {
+  return objs.filter(o => {
+    var dx = o.x - p.x;
+    var dy = o.y - p.y;
+    return dx * dx + dy * dy < 48;
+  });
+}
+
 // Render the ui reactively
 
 ss.html(() => 
   ['div',
    ['div', {style: {position: 'relative', display: 'inline-block', background: 'red'}} ,
-   ['div'].concat(landscapeTiles.map(terrainToImg)),
-   ['div'].concat(units.map(unitToImg)),
+   ['div'].concat(filterPos(landscapeTiles, {x:8,y:8}).map(terrainToImg)),
+   ['div'].concat(filterPos(units, {x:8, y:8}).map(unitToImg)),
    ['div'].concat(units.concat(landscapeTiles).map(debugImg))
    ],
    ['div', {style: {

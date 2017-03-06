@@ -122,7 +122,7 @@ function debugImg(o) {
       textAlign: 'center',
       fontSize: 10,
       textShadow: '1px 1px 2px black',
-      top: o.y * 36 - 36,
+      top: o.y * 36 - 32,
       left: o.x * 27
     }
   }, (o.debug || "").toString()];
@@ -143,24 +143,25 @@ function terrainToImg(terrain) {
 
 function filterPos(objs, p) {
   return objs.filter(o => {
-    var dx = o.x - (p.x & ~1);
-    var dy = o.y - (p.y & ~1);
-    return dx * dx + dy * dy < 48;
+    var dx = o.x - p.x | 0;
+    var dy = o.y - p.y | 0;
+    return dx * dx + dy * dy < 50;
   });
 }
 
 ss.handle('click', (a, b) => ss.set('game.event', a));
 // Render the ui reactively
-setInterval(() => ss.set('game.time', Date.now()), 100);
+//setInterval(() => ss.set('game.time', Date.now()), 100);
 ss.rerun('updateGame', 
 () => ss.set('game.pos', {
-  x: ss.get('game.time') / 1000 % 21 + 8,
-  y: ss.get('game.time') / 1000 % 30 + 8
+  x: 12,
+  y: 8,
 }));
+
             
 ss.html(() => 
   ['div',
-   {onClick: ss.event('increment')},
+   {onClick: ss.event('click', {extract: ['clientX', 'clientY']})},
    ['div', { style: {
      position: 'relative', 
      display: 'inline-block',
@@ -169,7 +170,9 @@ ss.html(() =>
    }} ,
    ['div'].concat(filterPos(landscapeTiles, ss.get('game.pos')).map(terrainToImg)),
    ['div'].concat(filterPos(units, ss.get('game.pos')).map(unitToImg)),
-   ['div'].concat(units.concat(landscapeTiles).map(debugImg))
+   ['div'].concat(units.concat(landscapeTiles)
+                  .map(o => Object.assign({debug: [o.x, o.y]}, o))
+                  .map(debugImg))
    ],
    ['div', {style: {
      position: 'absolute', 
@@ -186,6 +189,11 @@ ss.html(() =>
 
 // Handler for button clicks
 
+ss.handle('click', o => {
+  ss.setJS('game.info', o);
+  //ss.setJS('game.info.x', o.clientX / 27 | 0);
+  //ss.setJS('game.info.x', o.clientX / 27 | 0);
+});
 ss.handle('increment', () => 
   ss.setJS('count', ss.getJS('count', 0) + 1));
 

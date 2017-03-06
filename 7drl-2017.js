@@ -1,16 +1,22 @@
-// # AppEdit Hello World
+// # 7 Day Rogue Like  2017
 //
-// Modules/libraries are loaded with `require(...)`.
+// **In progress / under development, not functional yet**
 //
-// Documentation/source for the solsort library can be read on:
-// <https://appedit.solsort.com/?page=read&github=solsort/solsort>
+// This is an entry for the 7 day rogulike hackathon.
+//
+// It is made using <https://appedit.solsort.com>, 
+// and uses graphics from <https://wesnoth.org>,
 
 var ss = require('solsort');
+
+// We get the graphic assets directly from <https://githubusercontent.com> CDN.
 
 var cdnHost = "https://raw.githubusercontent.com/";
 var cdnUrl = cdnHost + "wesnoth/wesnoth/a9d014665673beb2bd4ad2c0d0e3a1f019e920bc/";
 var imgUrl = cdnUrl + "data/core/images/";
-var unitUrl = imgUrl + "units/";
+
+// The map of the tiles and initial units is just a text string,
+// that can be edited here.
 
 var map = `
 w w w w w w w w w w w w w w w 
@@ -26,6 +32,14 @@ d d d d g m g g g g w w w w w
 w w g g d g g g w w w w w w w 
  w w g w d w w w w w w w w w 
 w w w w w d w w w w w w w w w 
+ w w w w w w w w w w w w w w 
+w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w 
+w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w 
+w w w w w w w w w w w w w w w 
+ w w w w w w w w w w w w w w 
+w w w w w w w w w w w w w w w 
  w w w w w w w w w w w w w w 
 w w w w w w w w w w w w w w w 
  w w w w w w w w w w w w w w 
@@ -94,7 +108,7 @@ function unitToImg(unit) {
     style: {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: unit.y * 36 - 45,
+      top: unit.y * 36 - 16 - 42,
       left: unit.x * 54
     }
   }];
@@ -107,7 +121,7 @@ function terrainToImg(terrain) {
     style: {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: terrain.y * 36,
+      top: terrain.y * 36 - 16,
       left: terrain.x * 54
     }
   }];
@@ -116,15 +130,22 @@ function terrainToImg(terrain) {
 
 ss.html(() => 
   ['div',
-   ['div', {style: {position: 'relative', overflow: 'hidden', display: 'inline-block', background: 'red'}} ,
+   ['div', {style: {position: 'relative', display: 'inline-block', background: 'red'}} ,
    ['div'].concat(landscapeTiles.map(terrainToImg)),
    ['div'].concat(units.map(unitToImg))
    ],
+   ['div', {style: {
+     position: 'absolute', 
+     display: 'inline-block', 
+     fontWeight: 'bold',
+     color: 'white',
+     textShadow: '1px 1px 2px black',
+   }} ,
+  ['h1', '7DRL'],
    JSON.stringify(units),
-  ['h1', 'Hello world'],
   ['p', 'Count: ', ss.getJS('count', 0)],
   ['button', {onClick: ss.event('increment')},
-    'Increment']]);
+    'Click']]]);
 
 // Handler for button clicks
 
@@ -134,6 +155,6 @@ ss.handle('increment', () =>
 // Information about the app, - used for exporting to github, etc.
 
 exports.info = {
-  name: 'Hello World',
+  name: 'Seven day rogue like',
   github: 'solsort/7drl-2017'
 };

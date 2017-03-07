@@ -13,44 +13,41 @@ var cdnHost = "https://cdn.rawgit.com/";
 var cdnUrl = cdnHost + "wesnoth/wesnoth/a9d014665673beb2bd4ad2c0d0e3a1f019e920bc/";
 var imgUrl = cdnUrl + "data/core/images/";
 
-var map = `
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
- w s w w w w g w w w w w w w w w w w w w w w w w w w w w w w
-w s s s sds s g g g g g w w w w w w w w w w w w w w w w w w 
- w s s s s s s g g g w w w w w w w g w w w w w w w w w w w w
-w s g g m mdm s g g g w w w w w g g g w w w w w w w w w w w 
- w s gWg mdl m s g g w w w w w g g g g w w w w w w w w w w w
-w w gWg gpm mdm g g g w w w w g g w w w w w w w w w w w w w 
- w g g g m m ssg g g w w w w w g w w w w w w w w w w w w w w
-d d d d g m g g g g w w w w w w w w w w w w w w w w w w w w 
- w g g dWg g g g w w w w w w w w w w w w w w w w w w w w w w
-w w g g d g g g w w w w w w w w w w w w w w w w w w w w w w 
- w w g w d w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w d w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w d w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w d w w w w w w w m w w w w w w w w w w w w w w w 
- w w w w w w d d d d d d d d m m w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w m w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
- w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
-w w w w w w w w w w w w w w w w w w w w w w w w w w w w w w 
-`.split('\n').slice(1,-1);
+ss.GET('https://7drl-2017.solsort.com/level0.map').then(handleMap);
+function handleMap(m) {
+  console.log('here');
+  var map = [];
+  var rows = m.split('\n');
+  var id = 0;
+  for(var i = 0; i < rows.length; ++i) {
+    for(var j = 1 + (i & 1) * 4; j < rows[i].length; j += 8) {
+      var x = j/2 | 0;
+      var y = i;
+      map.push(Object.assign({x:x, y:y}, terrain[rows[i][j]]));
+      if(rows[i][j+1] !== ' ') {
+        let unit = Object.assign({x:x, y:y}, 
+                               unitObjs[rows[i][j+1]]);
+        unit.unique = !!unit.id;
+        unit.id = unit.id || rows[i][j+1] + id++;
+        console.log(rows[i][j+1], unit);
+        ss.set(['units', unit.id], unit);
+      }
+    }
+  }
+  ss.set('map', map);
+  console.log(ss.get([]));
+}
 
 var terrain = {
+  r: {
+    img: 'cave/floor',
+    passable: true
+  },
   g: {
     img: 'grass/green',
     passable: true
   },
-  w: {
+  '.': {
     img: 'swamp/water',
     passable: false
   },
@@ -58,7 +55,7 @@ var terrain = {
     img: 'sand/beach',
     passable: false
   },
-  m: {
+  ':': {
     img: 'mountains/basic',
     passable: false
   },
@@ -66,7 +63,7 @@ var terrain = {
     img:'unwalkable/lava',
     passable: false,
   },
-  d: {
+  '_': {
     img:'flat/dirt',
     passable: false,
   }
@@ -80,35 +77,13 @@ var unitObjs = {
   d: {
     img: 'dwarves/fighter'
   },
-  W: {
+  w: {
     img: 'goblins/direwolver'
   },
   s: {
     img: 'undead-skeletal/deathblade'
   }
 };
-
-var landscapeTiles = [];
-for(var y = 0; y < map.length; ++y) {
-  for(var x = y & 1; x < map[y].length; x += 2) {
-    landscapeTiles.push(Object.assign({x:y*2, y:x}, terrain[map[y][x]]));
-  }
-}
-
-//if(!ss.get('units')) {
-  let i = 0;
-for(var y = 0; y < map.length; ++y) {
-  for(var x = (y & 1) + 1; x < map[y].length; x += 2) {
-    if(map[y][x] !== ' ') {
-      let unit = Object.assign({x:y*2, y:x - 1}, 
-                               unitObjs[map[y][x]]);
-      unit.unique = !!unit.id;
-      unit.id = unit.id || map[y][x] + i++;
-      ss.set(['units', unit.id], unit);
-    }
-  }
-}
-//}
 
 /*
 
@@ -183,7 +158,6 @@ function filterPos(objs) {
   });
 }
 
-ss.handle('click', (a, b) => ss.set('game.event', a));
 // Render the ui reactively
 //setInterval(() => ss.set('game.time', Date.now()), 100);
 ss.rerun('updateGame', 
@@ -205,7 +179,7 @@ ss.html(() =>
      //onTouchStart: ss.event('click', {extract: ['touches.0']}),
    style: {position:'absolute', background: background, width: '100%', height: '100%'}},
    ['div', { style: {
-     display: 'inline-block',
+     display: 'inline-block', 
      width: 360,
      height: 480,
      position: 'absolute',
@@ -213,12 +187,12 @@ ss.html(() =>
      left: 0,
      overflow: 'hidden',
    }} ,
-   ['div'].concat(filterPos(landscapeTiles).map(terrainToImg)),
-   ['div'].concat(filterPos(Object.values(ss.get('units'))).map(unitToImg)),
-   ['div'].concat(filterPos(landscapeTiles)
+   ['div'].concat(filterPos(ss.get('map',[])).map(terrainToImg)),
+   ['div'].concat(filterPos(Object.values(ss.get('units', {}))).map(unitToImg)),
+   ['div'].concat(filterPos(ss.get('map',[]))
                //   .map(o => Object.assign({debug: [o.x, o.y]}, o))
                   .map(debugImg)),
-   ['img', {src: 'shadow.png', style: {position: 'absolute'}}],
+   ['img', {src: '//7drl-2017.solsort.com/shadow.png', style: {position: 'absolute'}}],
     ['svg', {width: 360, height: 480, style: {position: 'absolute'}},
      ['polyline', {points:'0,0 180,0 0,120',
          fill: background}],
@@ -237,8 +211,7 @@ ss.html(() =>
      color: 'white',
      textShadow: '1px 1px 2px black',
    }},
-    ['pre', {style: {background: 'rgba(0,0,0,0)'}},
-   JSON.stringify(ss.get('game'), null, 1)], ['br'],
+    //['pre', {style: {background: 'rgba(0,0,0,0)'}}, JSON.stringify(ss.get('game'), null, 1)], ['br'],
 //   JSON.stringify(ss.get('ui.bounds'), null, 4),
   //['p', 'Count: ', ss.getJS('count', 0)],
   //['button', {onClick: ss.event('increment')}, 'Click']
@@ -271,6 +244,7 @@ ss.handle('click', o => {
   ss.set('game.target', targetPos);
   ss.set('units.player.x', targetPos.x);
   ss.set('units.player.y', targetPos.y);
+  ss.set('game.pos', targetPos);
   /*
   ss.set('game.pos', //toCoord(
          {

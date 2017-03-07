@@ -100,42 +100,40 @@ for(var y = 0; y < map.length; ++y) {
   }
 }
 
+/*
+
+UI-design
+
+---------.--.--------  -+-
+      .-'\__/'-.     |  | ,- 120px
+   .-'\__/  \__/'-.  | ,|'
+,-'\__/  \__/  \__/'-.- |        18px
+|__/  \__/  \__/  \__|  |    ____|-|  ___
+|  \__/  \__/  \__/  |  |   /`-. \     |
+|__/  \__/@ \__/  \__|  |  /    `-\    | 72px
+|  \__/  \__/  \__/  |  |  \      /    |
+|__/  \__/  \__/  \__|  |   \____/    _|_
+|  \__/  \__/  \__/  |  |    |---|
+`-./  \__/  \__/  \.-|  |    36px
+   `-./  \__/  \.-'  |  |
+      `-./  \.-'     |  | 7*72px-2*12px = 480px
+---------`--'--------+ -+-
+
+|--------------------|
+  7*36+6*18 = 360
+*/
+
 function unitToImg(unit) {
   return ['img', {
     src: imgUrl + 'units/' + unit.img + '.png',
     style: {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: unit.y * 36,
-      left: unit.x * 27
+      top: (unit.y - ss.get('game.pos.y')) * 36 + 240,
+      left: (unit.x - ss.get('game.pos.x')) * 27 + 180,
     }
   }];
 }
-
-/*
-
-UI-design
-
----------.--.---------  -+-
-      .-'\__/'-.      |  | ,- 12px + 72px + 24px = 108px
-   .-'\__/  \__/'-.   | ,|'
-,-'\__/  \__/  \__/'-..- |        18px
-|__/  \__/  \__/  \__||  |    ____|-|  ___
-|  \__/  \__/  \__/  ||  |   /`-. \     |
-|__/  \__/@ \__/  \__||  |  /    `-\    | 72px
-|  \__/  \__/  \__/  ||  |  \      /    |
-|__/  \__/  \__/  \__||  |   \____/    _|_
-|  \__/  \__/  \__/  ||  |    |---|
-`-./  \__/  \__/  \.-'|  |    36px
-   `-./  \__/  \.-'   |  |
-      `-./  \.-'      |  | 7*72px-2*12px = 480px
----------`--'---------+ -+-
-
-|--------------------|
-  7*72-2*18 = 468
-----------------------|
-   468+2*6 = 480px
-*/
 
 function debugImg(o) {
   return ['str',  { style: {
@@ -147,8 +145,8 @@ function debugImg(o) {
       textAlign: 'center',
       fontSize: 10,
       textShadow: '1px 1px 2px black',
-      top: o.y * 36 - 32,
-      left: o.x * 27
+      top: (o.y - ss.get('game.pos.y')) * 36 + 240,
+      left: (o.x - ss.get('game.pos.x')) * 27 + 180,
     }
   }, (o.debug || "").toString()];
 }
@@ -160,8 +158,8 @@ function terrainToImg(terrain) {
       onClick: ss.event('increment', {data: terrain}),
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: terrain.y * 36,
-      left: terrain.x * 27
+      top: (terrain.y - ss.get('game.pos.y')) * 36 + 240,
+      left: (terrain.x - ss.get('game.pos.x')) * 27 + 180,
     }
   }];
 }
@@ -187,18 +185,32 @@ ss.rerun('updateGame',
             
 ss.html(() => 
   ['div',
-   {onMouseDown: ss.event('click', {extract: ['clientX', 'clientY']})},
+   {onMouseDown: ss.event('click', {extract: ['clientX', 'clientY']}),
+   style: {position:'absolute', background: 'black', width: '100%', height: '100%'}},
    ['div', { style: {
-     position: 'relative', 
      display: 'inline-block',
-     top: 36 * 8 - 36 * ss.get('game.pos.y'),
-     left: 27 * 8 - 27 * ss.get('game.pos.x')
+     width: 360,
+     height: 480,
+     position: 'absolute',
+     top: 0,
+     left: 0,
+     overflow: 'hidden'
    }} ,
    ['div'].concat(filterPos(landscapeTiles).map(terrainToImg)),
    ['div'].concat(filterPos(units).map(unitToImg)),
    ['div'].concat(filterPos(units.concat(landscapeTiles))
                   .map(o => Object.assign({debug: [o.x, o.y]}, o))
-                  .map(debugImg))
+                  .map(debugImg)),
+    ['svg', {width: 360, height: 480, style: {position: 'absolute'}},
+     ['polyline', {points:'0,0 180,0 0,120',
+         fill: 'solid', color: 'black'}],
+     ['polyline', {points:'360,0 180,0 360,120',
+         fill: 'solid', color: 'black'}],
+     ['polyline', {points:'0,480 180,480 0,360',
+         fill: 'solid', color: 'black'}],
+     ['polyline', {points:'360,480 180,480 360,360',
+         fill: 'solid', color: 'black'}],
+    ],
    ],
    ['div', {style: {
      position: 'absolute', 

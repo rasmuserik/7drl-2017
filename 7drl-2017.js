@@ -20,7 +20,7 @@ w s s s sds s g g g g g w w w w w w w w w w w w w w w w w w
  w s s s s s s g g g w w w w w w w g w w w w w w w w w w w w
 w s g g m mdm s g g g w w w w w g g g w w w w w w w w w w w 
  w s gWg mdl m s g g w w w w w g g g g w w w w w w w w w w w
-w w gWg g m mdm g g g w w w w g g w w w w w w w w w w w w w 
+w w gWg gpm mdm g g g w w w w g g w w w w w w w w w w w w w 
  w g g g m m ssg g g w w w w w g w w w w w w w w w w w w w w
 d d d d g m g g g g w w w w w w w w w w w w w w w w w w w w 
  w g g dWg g g g w w w w w w w w w w w w w w w w w w w w w w
@@ -73,6 +73,10 @@ var terrain = {
 };
 
 var unitObjs = {
+  p: {
+    img: 'human-loyalists/sergeant',
+    id: 'player'
+  },
   d: {
     img: 'dwarves/fighter'
   },
@@ -91,14 +95,20 @@ for(var y = 0; y < map.length; ++y) {
   }
 }
 
-var units = [];
+//if(!ss.get('units')) {
+  let i = 0;
 for(var y = 0; y < map.length; ++y) {
   for(var x = (y & 1) + 1; x < map[y].length; x += 2) {
     if(map[y][x] !== ' ') {
-      units.push(Object.assign({x:y*2, y:x - 1}, unitObjs[map[y][x]]));
+      let unit = Object.assign({x:y*2, y:x - 1}, 
+                               unitObjs[map[y][x]]);
+      unit.unique = !!unit.id;
+      unit.id = unit.id || map[y][x] + i++;
+      ss.set(['units', unit.id], unit);
     }
   }
 }
+//}
 
 /*
 
@@ -182,6 +192,9 @@ ss.rerun('updateGame',
   y: 8,
 }));
 
+if(!Object.values) {
+  Object.values = (o) => Object.keys(o).map(k => o[k]);
+}
             
 ss.html(() => 
   ['div',
@@ -197,9 +210,9 @@ ss.html(() =>
      overflow: 'hidden'
    }} ,
    ['div'].concat(filterPos(landscapeTiles).map(terrainToImg)),
-   ['div'].concat(filterPos(units).map(unitToImg)),
-   ['div'].concat(filterPos(units.concat(landscapeTiles))
-                  .map(o => Object.assign({debug: [o.x, o.y]}, o))
+   ['div'].concat(filterPos(Object.values(ss.get('units'))).map(unitToImg)),
+   ['div'].concat(filterPos(landscapeTiles)
+               //   .map(o => Object.assign({debug: [o.x, o.y]}, o))
                   .map(debugImg)),
     ['svg', {width: 360, height: 480, style: {position: 'absolute'}},
      ['polyline', {points:'0,0 180,0 0,120',
@@ -250,6 +263,8 @@ ss.handle('click', o => {
     y: ss.get('game.pos.y') + y/2
   });
   ss.set('game.target', targetPos);
+  ss.set('units.player.x', targetPos.x);
+  ss.set('units.player.y', targetPos.y);
   /*
   ss.set('game.pos', //toCoord(
          {

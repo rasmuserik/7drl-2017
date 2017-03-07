@@ -196,10 +196,14 @@ if(!Object.values) {
   Object.values = (o) => Object.keys(o).map(k => o[k]);
 }
             
+var background = '#eee';
 ss.html(() => 
   ['div',
-   {onMouseDown: ss.event('click', {extract: ['clientX', 'clientY']}),
-   style: {position:'absolute', background: 'black', width: '100%', height: '100%'}},
+   {
+     onClick: ss.event('click', {extract: ['clientX', 'clientY']}),
+     //onMouseDown: ss.event('click', {extract: ['clientX', 'clientY']}),
+     //onTouchStart: ss.event('click', {extract: ['touches.0']}),
+   style: {position:'absolute', background: background, width: '100%', height: '100%'}},
    ['div', { style: {
      display: 'inline-block',
      width: 360,
@@ -207,22 +211,23 @@ ss.html(() =>
      position: 'absolute',
      top: 0,
      left: 0,
-     overflow: 'hidden'
+     overflow: 'hidden',
    }} ,
    ['div'].concat(filterPos(landscapeTiles).map(terrainToImg)),
    ['div'].concat(filterPos(Object.values(ss.get('units'))).map(unitToImg)),
    ['div'].concat(filterPos(landscapeTiles)
                //   .map(o => Object.assign({debug: [o.x, o.y]}, o))
                   .map(debugImg)),
+   ['img', {src: 'shadow.png', style: {position: 'absolute'}}],
     ['svg', {width: 360, height: 480, style: {position: 'absolute'}},
      ['polyline', {points:'0,0 180,0 0,120',
-         fill: 'solid', color: 'black'}],
+         fill: background}],
      ['polyline', {points:'360,0 180,0 360,120',
-         fill: 'solid', color: 'black'}],
+         fill: background}],
      ['polyline', {points:'0,480 180,480 0,360',
-         fill: 'solid', color: 'black'}],
+         fill: background}],
      ['polyline', {points:'360,480 180,480 360,360',
-         fill: 'solid', color: 'black'}],
+         fill: background}],
     ],
    ],
    ['div', {style: {
@@ -258,6 +263,7 @@ ss.handle('click', o => {
   y = (y - 240)/18;
   console.log('click', x, y);
   
+  ss.set('game.event', o);
   var targetPos = toCoord({
     x: ss.get('game.pos.x') + x/2,
     y: ss.get('game.pos.y') + y/2

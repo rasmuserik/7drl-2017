@@ -20,6 +20,31 @@ var cdnHost = "https://cdn.rawgit.com/";
 var cdnUrl = cdnHost + "wesnoth/wesnoth/a9d014665673beb2bd4ad2c0d0e3a1f019e920bc/";
 var imgUrl = cdnUrl + "data/core/images/";
 
+// ## Initialisation
+
+// Render the ui reactively
+//setInterval(() => ss.set('game.time', Date.now()), 100);
+
+// Clock
+
+function clock(name, interval) {
+  if(!ss.get(name)) {
+    setInterval(() => clock(name), interval);
+  }
+  ss.set(name, Date.now());
+}
+clock('time', 1000/10);
+clock('game.tick', 1000);
+
+if(!ss.get('units.player')) {
+  ss.set('units.player', {pos:{x:10, y:10}});
+}
+
+// Shim
+if(!Object.values) {
+  Object.values = (o) => Object.keys(o).map(k => o[k]);
+}
+            
 // ## Fetch map, and create data structure from it
 
 if(!ss.get('map')) {
@@ -173,28 +198,6 @@ function filterPos(objs) {
   });
 }
 
-// ## Initialisation
-
-// Render the ui reactively
-//setInterval(() => ss.set('game.time', Date.now()), 100);
-
-// Clock
-
-function clock(name, interval) {
-  if(!ss.get(name)) {
-    setInterval(() => clock(name), interval);
-  }
-  ss.set(name, Date.now());
-}
-clock('time', 1000/30);
-clock('game.tick', 1000);
-
-
-// Shim
-if(!Object.values) {
-  Object.values = (o) => Object.keys(o).map(k => o[k]);
-}
-            
 // ## Update units
 
 ss.rerun('world-update', () => {
@@ -216,8 +219,8 @@ function worldUpdate() {
     unit.prev.t = Date.now();
     if(unit.id === 'player') {
       unit.next = {
-        x: ss.get('game.target.x'),
-        y: ss.get('game.target.y'),
+        x: ss.get('game.target.x', unit.next.x),
+        y: ss.get('game.target.y', unit.next.y),
         t: Date.now() + 1000,
       };
     } else {
@@ -247,6 +250,7 @@ function frameUpdate() {
 // ## Main rendering
 
 var background = '#eee';
+ss.ready(() =>
 ss.html(() => 
   ['div',
    {
@@ -266,7 +270,7 @@ ss.html(() =>
    ['div'].concat(filterPos(ss.get('map',[])).map(terrainToImg)),
    ['div'].concat(filterPos(Object.values(ss.get('units', {}))).map(unitToImg)),
    ['div'].concat(filterPos(ss.get('map',[]))
-               //   .map(o => Object.assign({debug: [o.x, o.y]}, o))
+     //             .map(o => Object.assign({debug: [o.pos.x, o.pos.y]}, o))
                   .map(debugImg)),
    ['img', {src: '//7drl-2017.solsort.com/shadow.png', style: {position: 'absolute'}}],
     ['svg', {width: 360, height: 480, style: {position: 'absolute'}},
@@ -287,11 +291,11 @@ ss.html(() =>
      color: 'white',
      textShadow: '1px 1px 2px black',
    }},
-    ['pre', {style: {background: 'rgba(0,0,0,0)'}}, JSON.stringify(ss.get('game'), null, 1)], ['br'],
+    //['pre', {style: {background: 'rgba(0,0,0,0)'}}, JSON.stringify(ss.get('game'), null, 1)], ['br'],
 //   JSON.stringify(ss.get('ui.bounds'), null, 4),
   //['p', 'Count: ', ss.getJS('count', 0)],
   //['button', {onClick: ss.event('increment')}, 'Click']
-   ]]);
+   ]]));
 
 // ## Utility functions
 

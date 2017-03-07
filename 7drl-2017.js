@@ -169,7 +169,7 @@ function filterPos(objs) {
   return objs.filter(o => {
     var dx = o.x - p.x | 0;
     var dy = o.y - p.y | 0;
-    return dx * dx + dy * dy < 50;
+    return dx * dx + dy * dy < 60;
   });
 }
 
@@ -218,29 +218,47 @@ ss.html(() =>
      fontWeight: 'bold',
      color: 'white',
      textShadow: '1px 1px 2px black',
-   }} ,
-  ['h1', '7DRL'],
-   JSON.stringify(ss.get('game')), ['br'],
-   JSON.stringify(ss.get('ui.bounds')),
-  ['p', 'Count: ', ss.getJS('count', 0)],
-  ['button', {onClick: ss.event('increment')},
-    'Click']]]);
+   }},
+    ['pre', {style: {background: 'rgba(0,0,0,0)'}},
+   JSON.stringify(ss.get('game'), null, 1)], ['br'],
+//   JSON.stringify(ss.get('ui.bounds'), null, 4),
+  //['p', 'Count: ', ss.getJS('count', 0)],
+  //['button', {onClick: ss.event('increment')}, 'Click']
+   ]]);
 
 function toCoord(o) {
-  o.x = o.x & ~1;
-  o.y = (o.y & ~1) + (o.x & 2)/2;
+  o.x = 2 * Math.round(o.x / 2);
+  if(o.x % 4 === 0) {
+    o.y = 2 * Math.round(o.y / 2);
+  } else {
+    o.y = 2 * Math.round((o.y - 1) / 2) + 1;
+  }
   return o;
 }
 
 // Handler for button clicks
 
 ss.handle('click', o => {
-  var x = (o.clientX - ss.get('ui.bounds.left')) | 0;
-  var y = (o.clientY - ss.get('ui.bounds.top')) | 0;
-  ss.set('game.pos', toCoord({
-    x: ss.get('game.pos.x') + x / 27 - 8,
-    y: ss.get('game.pos.y') + y / 27 - 11 
-  }));
+  var x = (o.clientX - ss.get('ui.bounds.left'));
+  var y = (o.clientY - ss.get('ui.bounds.top'));
+  x = (x - 180)/14;
+  y = (y - 240)/18;
+  console.log('click', x, y);
+  
+  var targetPos = toCoord({
+    x: ss.get('game.pos.x') + x/2,
+    y: ss.get('game.pos.y') + y/2
+  });
+  ss.set('game.target', targetPos);
+  /*
+  ss.set('game.pos', //toCoord(
+         {
+    x: ss.get('game.pos.x') + x/2,
+    y: ss.get('game.pos.y') + y/2
+  }
+ //   )
+  );
+  */
 });
 ss.handle('increment', () => 
   ss.setJS('count', ss.getJS('count', 0) + 1));

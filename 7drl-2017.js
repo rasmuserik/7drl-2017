@@ -2,10 +2,17 @@
 //
 // **In progress / under development, not functional yet**
 //
-// This is an entry for the 7 day rogulike hackathon.
+// This is an entry for the [7 day rogue-like](http://7drl.org/) hackathon.
 //
 // It is made using <https://appedit.solsort.com>, 
 // and uses graphics from <https://wesnoth.org>,
+
+// Information about the app, - used for exporting to github, etc.
+
+exports.info = {
+  name: 'Seven day rogue like',
+  github: 'solsort/7drl-2017'
+};
 
 var ss = require('solsort');
 
@@ -13,6 +20,9 @@ var cdnHost = "https://cdn.rawgit.com/";
 var cdnUrl = cdnHost + "wesnoth/wesnoth/a9d014665673beb2bd4ad2c0d0e3a1f019e920bc/";
 var imgUrl = cdnUrl + "data/core/images/";
 
+// ## Fetch map, and create data structure from it
+
+if(!ss.get('map')) {
 ss.GET('https://7drl-2017.solsort.com/level0.map').then(handleMap);
 function handleMap(m) {
   console.log('here');
@@ -23,13 +33,12 @@ function handleMap(m) {
     for(var j = 1 + (i & 1) * 4; j < rows[i].length; j += 8) {
       var x = j/2 | 0;
       var y = i;
-      map.push(Object.assign({x:x, y:y}, terrain[rows[i][j]]));
+      map.push(Object.assign({pos: {x:x, y:y}}, terrain[rows[i][j]]));
       if(rows[i][j+1] !== ' ') {
-        let unit = Object.assign({x:x, y:y}, 
+        let unit = Object.assign({pos: {x:x, y:y}}, 
                                unitObjs[rows[i][j+1]]);
         unit.unique = !!unit.id;
         unit.id = unit.id || rows[i][j+1] + id++;
-        console.log(rows[i][j+1], unit);
         ss.set(['units', unit.id], unit);
       }
     }
@@ -37,6 +46,9 @@ function handleMap(m) {
   ss.set('map', map);
   console.log(ss.get([]));
 }
+}
+
+// ## Terrain / unit definitions
 
 var terrain = {
   r: {
@@ -85,6 +97,7 @@ var unitObjs = {
   }
 };
 
+// ## Notes on UI-design
 /*
 
 UI-design
@@ -108,14 +121,16 @@ UI-design
   7*36+6*18 = 360
 */
 
+// ## Rendering functions
+
 function unitToImg(unit) {
   return ['img', {
     src: imgUrl + 'units/' + unit.img + '.png',
     style: {
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: (unit.y - ss.get('game.pos.y')) * 36 + 240,
-      left: (unit.x - ss.get('game.pos.x')) * 27 + 180,
+      top: (unit.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
+      left: (unit.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
     }
   }];
 }
@@ -130,8 +145,8 @@ function debugImg(o) {
       textAlign: 'center',
       fontSize: 10,
       textShadow: '1px 1px 2px black',
-      top: (o.y - ss.get('game.pos.y')) * 36 + 240,
-      left: (o.x - ss.get('game.pos.x')) * 27 + 180,
+      top: (o.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
+      left: (o.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
     }
   }, (o.debug || "").toString()];
 }
@@ -143,33 +158,94 @@ function terrainToImg(terrain) {
       onClick: ss.event('increment', {data: terrain}),
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: (terrain.y - ss.get('game.pos.y')) * 36 + 240,
-      left: (terrain.x - ss.get('game.pos.x')) * 27 + 180,
+      top: (terrain.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
+      left: (terrain.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
     }
   }];
 }
 
 function filterPos(objs) {
-  var p = ss.get('game.pos');
+  var p = ss.get('units.player.pos');
   return objs.filter(o => {
-    var dx = o.x - p.x | 0;
-    var dy = o.y - p.y | 0;
+    var dx = o.pos.x - p.x | 0;
+    var dy = o.pos.y - p.y | 0;
     return dx * dx + dy * dy < 60;
   });
 }
 
+// ## Initialisation
+
 // Render the ui reactively
 //setInterval(() => ss.set('game.time', Date.now()), 100);
-ss.rerun('updateGame', 
-() => ss.set('game.pos', {
-  x: 12,
-  y: 8,
-}));
 
+// Clock
+
+function clock(name, interval) {
+  if(!ss.get(name)) {
+    setInterval(() => clock(name), interval);
+  }
+  ss.set(name, Date.now());
+}
+clock('time', 1000/30);
+clock('game.tick', 1000);
+
+
+// Shim
 if(!Object.values) {
   Object.values = (o) => Object.keys(o).map(k => o[k]);
 }
             
+// ## Update units
+
+ss.rerun('world-update', () => {
+  ss.get('game.tick');
+  setTimeout(worldUpdate, 0);
+}); 
+
+ss.rerun('frame-update', () => {
+  ss.get('time');
+  setTimeout(frameUpdate, 0);
+}); 
+
+
+var prevTime = 0;
+function worldUpdate() {
+  Object.values(ss.get('units',{})).forEach(unit => {
+    unit.next = unit.next || unit.pos;
+    unit.prev = unit.next;
+    unit.prev.t = Date.now();
+    if(unit.id === 'player') {
+      unit.next = {
+        x: ss.get('game.target.x'),
+        y: ss.get('game.target.y'),
+        t: Date.now() + 1000,
+      };
+    } else {
+      unit.next = {
+        x: unit.prev.x + Math.random() * 4 - 2,
+        y: unit.prev.y + Math.random() * 4 - 2,
+        t: Date.now() + 1000,
+      };
+    }
+    ss.set(['units', unit.id], unit);
+  });
+}
+worldUpdate();
+
+function frameUpdate() {
+  var t = Date.now();
+  Object.values(ss.get('units',{})).forEach(unit => {
+    if(unit.next && unit.prev && t < unit.next.t) {
+      var dt = (t - unit.prev.t) / (unit.next.t - unit.prev.t);
+      unit.pos.x = (1-dt) * unit.prev.x + dt * unit.next.x;
+      unit.pos.y = (1-dt) * unit.prev.y + dt * unit.next.y;
+      ss.set(['units', unit.id], unit);
+    }
+  });
+}
+
+// ## Main rendering
+
 var background = '#eee';
 ss.html(() => 
   ['div',
@@ -211,11 +287,13 @@ ss.html(() =>
      color: 'white',
      textShadow: '1px 1px 2px black',
    }},
-    //['pre', {style: {background: 'rgba(0,0,0,0)'}}, JSON.stringify(ss.get('game'), null, 1)], ['br'],
+    ['pre', {style: {background: 'rgba(0,0,0,0)'}}, JSON.stringify(ss.get('game'), null, 1)], ['br'],
 //   JSON.stringify(ss.get('ui.bounds'), null, 4),
   //['p', 'Count: ', ss.getJS('count', 0)],
   //['button', {onClick: ss.event('increment')}, 'Click']
    ]]);
+
+// ## Utility functions
 
 function toCoord(o) {
   o.x = 2 * Math.round(o.x / 2);
@@ -227,7 +305,7 @@ function toCoord(o) {
   return o;
 }
 
-// Handler for button clicks
+// ## Handler for button clicks
 
 ss.handle('click', o => {
   var x = (o.clientX - ss.get('ui.bounds.left'));
@@ -238,13 +316,11 @@ ss.handle('click', o => {
   
   ss.set('game.event', o);
   var targetPos = toCoord({
-    x: ss.get('game.pos.x') + x/2,
-    y: ss.get('game.pos.y') + y/2
+    x: ss.get('units.player.pos.x') + x/2,
+    y: ss.get('units.player.pos.y') + y/2
   });
-  ss.set('game.target', targetPos);
-  ss.set('units.player.x', targetPos.x);
-  ss.set('units.player.y', targetPos.y);
-  ss.set('game.pos', targetPos);
+  ss.set('game.target.x', targetPos.x);
+  ss.set('game.target.y', targetPos.y);
   /*
   ss.set('game.pos', //toCoord(
          {
@@ -258,9 +334,3 @@ ss.handle('click', o => {
 ss.handle('increment', () => 
   ss.setJS('count', ss.getJS('count', 0) + 1));
 
-// Information about the app, - used for exporting to github, etc.
-
-exports.info = {
-  name: 'Seven day rogue like',
-  github: 'solsort/7drl-2017'
-};

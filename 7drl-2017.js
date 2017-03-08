@@ -33,7 +33,7 @@ function clock(name, interval) {
   }
   ss.set(name, Date.now());
 }
-var msPerTurn = 1000;
+var msPerTurn = 800;
 clock('time', 1000/10);
 clock('game.tick', msPerTurn);
 
@@ -129,7 +129,7 @@ var unitObjs = {
     id: 'player',
     update: function() {
       this.energy = Math.min(100, this.energy + 10);
-      this.health = Math.min(100, this.health + 3);
+      this.health = Math.min(100, this.health + 1);
       var n = neighbours(this.next);
       n = n.filter(o => getTile(o).passable);
       //n = n.filter(o => !unitsByPos[posKey(o)]);
@@ -350,6 +350,7 @@ var unitsByPos = {};
 var prevTime = 0;
 function worldUpdate() {
   var units = Object.values(ss.get('units', {}));
+  units = units.filter(o => o);
   unitsByPos =
          kv2obj(
     units.map(u => [posKey(u.next||{}), u.id])
@@ -361,20 +362,21 @@ function worldUpdate() {
     unit.prev = unit.next;
     unit.prev.t = Date.now();
     unit.update();
-    if(unit.health > 0) {
-    	ss.set(['units', unit.id], unit);
-    } else {
-    	ss.set(['units', unit.id]);
-    }
+    ss.set(['units', unit.id], unit);
     unitsByPos[posKey(unit.next)] = unit.id;
+  });
+  units.forEach(unit => {
+    if(unit.health < 0) {
+      ss.set(['units', unit.id]);
+    }
   });
 }
 worldUpdate();
 
 function frameUpdate() {
   var t = Date.now();
-  Object.values(ss.get('units',{})).forEach(unit => {
-    if(unit.next && unit.prev && t < unit.next.t) {
+  Object.values(ss.get('units',{})).filter(o=>o).forEach(unit => {
+    if(unit && unit.next && unit.prev && t < unit.next.t) {
       var dt = (t - unit.prev.t) / (unit.next.t - unit.prev.t);
       unit.pos.x = (1-dt) * unit.prev.x + dt * unit.next.x;
       unit.pos.y = (1-dt) * unit.prev.y + dt * unit.next.y;
@@ -404,7 +406,7 @@ function start() {
      overflow: 'hidden',
    }} ,
    ['div'].concat(filterPos(Object.values(ss.get('map',{}))).map(terrainToImg)),
-   ['div'].concat(filterPos(Object.values(ss.get('units', {}))).map(unitToImg)),
+   ['div'].concat(filterPos(Object.values(ss.get('units', {})).filter(o=>o)).map(unitToImg)),
    ['div'].concat(filterPos(Object.values(ss.get('map',{})))
      //             .map(o => Object.assign({debug: [o.pos.x, o.pos.y]}, o))
                   .map(debugImg)),

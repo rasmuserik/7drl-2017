@@ -33,7 +33,7 @@ function clock(name, interval) {
   }
   ss.set(name, Date.now());
 }
-var msPerTurn = 1500;
+var msPerTurn = 1000;
 clock('time', 1000/10);
 clock('game.tick', msPerTurn);
 
@@ -243,12 +243,27 @@ function unitToImg(unit) {
   },
           ['span', {style: {
             position: 'absolute',
-            background: 'rgba(255,0,0,0.5)',
-            width: unit.health / 100 * 36,
-            height: 4,
+            width: 38,
+            background: '#000',
+            height: 7,
+            top: 59,
+            left: 17,
+          }}],
+          ['span', {style: {
+            position: 'absolute',
+            background: '#0a0',
+            width: unit.energy/ 100 * 36,
+            height: 2,
             top: 60,
             left: 18,
-            boxShadow: '2px 2px 2px rgba(0,0,0,0.5)',
+          }}],
+          ['span', {style: {
+            position: 'absolute',
+            background: '#c00',
+            width: unit.health / 100 * 36,
+            height: 2,
+            top: 63,
+            left: 18,
           }}],
          ];
 }

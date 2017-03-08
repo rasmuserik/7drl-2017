@@ -8,7 +8,7 @@
 // and uses graphics from <https://wesnoth.org>,
 
 // Information about the app, - used for exporting to github, etc.
-
+ 
 exports.info = {
   name: 'Seven day rogue like',
   github: 'solsort/7drl-2017'
@@ -130,13 +130,23 @@ var unitObjs = {
     update: function() {
       var n = neighbours(this.next);
       n = n.filter(o => getTile(o).passable);
-      n = n.filter(o => !unitsByPos[posKey(o)]);
+      //n = n.filter(o => !unitsByPos[posKey(o)]);
       n.push(Object.assign({}, this.next)); 
       n = n.map(p =>  Object.assign(p, {dist:
                         dist2(p, ss.get('game.target'))}));
       n.sort((a,b) => a.dist - b.dist);
       var pos = n[0];
-      if(pos) {
+      var enemy = unitsByPos[posKey(pos)];
+      if(enemy === this.id) {
+        enemy = undefined;
+      }
+      if(enemy) {
+        var enemyHealth = ss.get(['units', enemy, 'health']);
+        ss.set(['units', enemy, 'health'], enemyHealth - 25);
+        console.log('player attack', enemy, enemyHealth, 
+            ss.get(['units', enemy, 'health']));
+        
+      } else if(pos) {
         this.next = pos;
         this.next.t =  Date.now() + msPerTurn;
       }
@@ -161,6 +171,8 @@ var unitObjs = {
 };
 
 var unitDefault = {
+  health: 100,
+  energy: 100,
   update: function() {
     var n = neighbours(this.next);
     n = n.filter(o => getTile(o).passable);
@@ -217,15 +229,28 @@ UI-design
 // ## Rendering functions
 
 function unitToImg(unit) {
-  return ['img', {
-    src: imgUrl + 'units/' + unit.img + '.png',
+  return ['div', {
     style: {
+      display: 'inline-block',
+      width: 72,
+      height: 72,
+      background: 'url(' + imgUrl + 'units/' + unit.img + '.png)',
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
       top: (unit.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
       left: (unit.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
     }
-  }];
+  },
+          ['span', {style: {
+            position: 'absolute',
+            background: 'rgba(255,0,0,0.5)',
+            width: unit.health / 100 * 36,
+            height: 4,
+            top: 60,
+            left: 18,
+            boxShadow: '2px 2px 2px rgba(0,0,0,0.5)',
+          }}],
+         ];
 }
 
 function debugImg(o) {
@@ -297,6 +322,7 @@ function worldUpdate() {
   );
                                                        
   units.forEach(unit => {
+    unit = ss.get(['units', unit.id]);
     unit.next = unit.next || unit.pos;
     unit.prev = unit.next;
     unit.prev.t = Date.now();
@@ -381,7 +407,6 @@ ss.ready(() => {
   var y = (o.clientY - ss.get('ui.bounds.top'));
   x = (x - 180)/14;
   y = (y - 240)/18;
-  console.log('click', x, y);
   
   ss.set('game.event', o);
   var targetPos = toCoord({

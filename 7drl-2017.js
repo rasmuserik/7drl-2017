@@ -36,10 +36,6 @@ function clock(name, interval) {
 clock('time', 1000/10);
 clock('game.tick', 1000);
 
-if(!ss.get('units.player')) {
-  ss.set('units.player', {pos:{x:10, y:10}});
-}
-
 // Shim
 if(!Object.values) {
   Object.values = (o) => Object.keys(o).map(k => o[k]);
@@ -47,20 +43,27 @@ if(!Object.values) {
             
 // ## Fetch map, and create data structure from it
 
-if(!ss.get('map')) {
-ss.GET('https://7drl-2017.solsort.com/level0.map').then(handleMap);
+var rawMap;
+if(!rawMap) {
+  ss.GET('https://7drl-2017.solsort.com/level0.map').then(handleMap);
+} else {
+  handleMap(rawMap);
+}
+
 function handleMap(m) {
+  rawMap = m;
   console.log('here');
-  var map = [];
+  var map = {};
   var rows = m.split('\n');
   var id = 0;
   for(var i = 0; i < rows.length; ++i) {
     for(var j = 1 + (i & 1) * 4; j < rows[i].length; j += 8) {
       var x = j/2 | 0;
       var y = i;
-      map.push(Object.assign({pos: {x:x, y:y}}, terrain[rows[i][j]]));
+      map[[x,y]] = Object.assign({pos: {x:x, y:y}}, terrain[rows[i][j]]);
       if(rows[i][j+1] !== ' ') {
         let unit = Object.assign({pos: {x:x, y:y}}, 
+                                 unitDefault,
                                unitObjs[rows[i][j+1]]);
         unit.unique = !!unit.id;
         unit.id = unit.id || rows[i][j+1] + id++;
@@ -70,7 +73,7 @@ function handleMap(m) {
   }
   ss.set('map', map);
   console.log(ss.get([]));
-}
+  start();
 }
 
 // ## Terrain / unit definitions
@@ -78,6 +81,14 @@ function handleMap(m) {
 var terrain = {
   r: {
     img: 'cave/floor',
+    passable: true
+  },
+  m: {
+    img: 'grass/green',
+    passable: true
+  },
+  t: {
+    img: 'cave/lava',
     passable: true
   },
   g: {
@@ -90,7 +101,7 @@ var terrain = {
   },
   s: {
     img: 'sand/beach',
-    passable: false
+    passable: true
   },
   ':': {
     img: 'mountains/basic',
@@ -102,14 +113,21 @@ var terrain = {
   },
   '_': {
     img:'flat/dirt',
-    passable: false,
+    passable: true,
   }
 };
 
 var unitObjs = {
   p: {
     img: 'human-loyalists/sergeant',
-    id: 'player'
+    id: 'player',
+    update: function() {
+      this.next = {
+        x: ss.get('game.target.x', this.next.x),
+        y: ss.get('game.target.y', this.next.y),
+        t: Date.now() + 1000,
+      };
+    }
   },
   d: {
     img: 'dwarves/fighter'
@@ -122,6 +140,32 @@ var unitObjs = {
   }
 };
 
+var unitDefault = {
+  update: function() {
+    var n = neighbours(this.next);
+    n = n.filter(o => getTile(o).passable);
+    var pos = n[Math.random() * n.length |0];
+    if(pos) {
+      this.next = pos;
+      this.next.t =  Date.now() + 1000;
+    }
+  }
+};
+
+function getTile(pos) {
+  return ss.get(['map', [pos.x, pos.y].toString()],{});
+}
+
+function neighbours(o) {
+  return [
+    {x: o.x + 2, y: o.y + 1},
+    {x: o.x - 2, y: o.y + 1},
+    {x: o.x, y: o.y + 2},
+    {x: o.x, y: o.y - 2},
+    {x: o.x + 2, y: o.y - 1},
+    {x: o.x - 2, y: o.y - 1},
+  ];
+}
 // ## Notes on UI-design
 /*
 
@@ -217,6 +261,8 @@ function worldUpdate() {
     unit.next = unit.next || unit.pos;
     unit.prev = unit.next;
     unit.prev.t = Date.now();
+    unit.update();
+    /*
     if(unit.id === 'player') {
       unit.next = {
         x: ss.get('game.target.x', unit.next.x),
@@ -230,6 +276,7 @@ function worldUpdate() {
         t: Date.now() + 1000,
       };
     }
+    */
     ss.set(['units', unit.id], unit);
   });
 }
@@ -250,8 +297,8 @@ function frameUpdate() {
 // ## Main rendering
 
 var background = '#eee';
-ss.ready(() =>
-ss.html(() => 
+function start() {
+ ss.html(() => 
   ['div',
    {
      onClick: ss.event('click', {extract: ['clientX', 'clientY']}),
@@ -267,22 +314,12 @@ ss.html(() =>
      left: 0,
      overflow: 'hidden',
    }} ,
-   ['div'].concat(filterPos(ss.get('map',[])).map(terrainToImg)),
+   ['div'].concat(filterPos(Object.values(ss.get('map',{}))).map(terrainToImg)),
    ['div'].concat(filterPos(Object.values(ss.get('units', {}))).map(unitToImg)),
-   ['div'].concat(filterPos(ss.get('map',[]))
+   ['div'].concat(filterPos(Object.values(ss.get('map',{})))
      //             .map(o => Object.assign({debug: [o.pos.x, o.pos.y]}, o))
                   .map(debugImg)),
    ['img', {src: '//7drl-2017.solsort.com/shadow.png', style: {position: 'absolute'}}],
-    ['svg', {width: 360, height: 480, style: {position: 'absolute'}},
-     ['polyline', {points:'0,0 180,0 0,120',
-         fill: background}],
-     ['polyline', {points:'360,0 180,0 360,120',
-         fill: background}],
-     ['polyline', {points:'0,480 180,480 0,360',
-         fill: background}],
-     ['polyline', {points:'360,480 180,480 360,360',
-         fill: background}],
-    ],
    ],
    ['div', {style: {
      position: 'absolute', 
@@ -295,7 +332,8 @@ ss.html(() =>
 //   JSON.stringify(ss.get('ui.bounds'), null, 4),
   //['p', 'Count: ', ss.getJS('count', 0)],
   //['button', {onClick: ss.event('increment')}, 'Click']
-   ]]));
+   ]]);
+}
 
 // ## Utility functions
 
@@ -311,7 +349,8 @@ function toCoord(o) {
 
 // ## Handler for button clicks
 
-ss.handle('click', o => {
+ss.ready(() => {
+ ss.handle('click', o => {
   var x = (o.clientX - ss.get('ui.bounds.left'));
   var y = (o.clientY - ss.get('ui.bounds.top'));
   x = (x - 180)/14;
@@ -330,10 +369,11 @@ ss.handle('click', o => {
          {
     x: ss.get('game.pos.x') + x/2,
     y: ss.get('game.pos.y') + y/2
-  }
+  } 
  //   )
   );
   */
+ });
 });
 ss.handle('increment', () => 
   ss.setJS('count', ss.getJS('count', 0) + 1));

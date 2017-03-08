@@ -33,8 +33,9 @@ function clock(name, interval) {
   }
   ss.set(name, Date.now());
 }
+var msPerTurn = 1500;
 clock('time', 1000/10);
-clock('game.tick', 1500);
+clock('game.tick', msPerTurn);
 
 // Shim
 if(!Object.values) {
@@ -117,16 +118,35 @@ var terrain = {
   }
 };
 
+function dist2(a,b) {
+  var dx = a.x - b.x;
+  var dy = a.y - b.y;
+  return dx* dx + dy * dy;
+}
 var unitObjs = {
   p: {
     img: 'human-loyalists/sergeant',
     id: 'player',
     update: function() {
+      var n = neighbours(this.next);
+      n = n.filter(o => getTile(o).passable);
+      n = n.filter(o => !unitsByPos[posKey(o)]);
+      n.push(Object.assign({}, this.next)); 
+      n = n.map(p =>  Object.assign(p, {dist:
+                        dist2(p, ss.get('game.target'))}));
+      n.sort((a,b) => a.dist - b.dist);
+      var pos = n[0];
+      if(pos) {
+        this.next = pos;
+        this.next.t =  Date.now() + msPerTurn;
+      }
+      /*
       this.next = {
         x: ss.get('game.target.x', this.next.x),
         y: ss.get('game.target.y', this.next.y),
-        t: Date.now() + 1000,
+        t: Date.now() + msPerTurn,
       };
+      */
     }
   },
   d: {
@@ -148,7 +168,7 @@ var unitDefault = {
     var pos = n[Math.random() * n.length |0];
     if(pos) {
       this.next = pos;
-      this.next.t =  Date.now() + 1000;
+      this.next.t =  Date.now() + msPerTurn;
     }
   }
 };
@@ -268,7 +288,6 @@ function kv2obj(arr) {
 } 
 var unitsByPos = {};
 
-console.log(ss.get('unitsByPos'));
 var prevTime = 0;
 function worldUpdate() {
   var units = Object.values(ss.get('units', {}));
@@ -314,7 +333,7 @@ function start() {
    ['div', { style: {
      display: 'inline-block', 
      width: 360,
-     height: 480,
+     height: 480, 
      position: 'absolute',
      top: 0,
      left: 0,
@@ -335,6 +354,7 @@ function start() {
      textShadow: '1px 1px 2px black',
    }},
     //['pre', {style: {background: 'rgba(0,0,0,0)'}}, JSON.stringify(ss.get('game'), null, 1)], ['br'],
+    //['pre', {style: {background: 'rgba(0,0,0,0)'}}, JSON.stringify(ss.get('units.player'), null, 1)], ['br'],
 //   JSON.stringify(ss.get('ui.bounds'), null, 4),
   //['p', 'Count: ', ss.getJS('count', 0)],
   //['button', {onClick: ss.event('increment')}, 'Click']

@@ -128,6 +128,8 @@ var unitObjs = {
     img: 'human-loyalists/sergeant',
     id: 'player',
     update: function() {
+      this.energy = Math.min(100, this.energy + 10);
+      this.health = Math.min(100, this.health + 3);
       var n = neighbours(this.next);
       n = n.filter(o => getTile(o).passable);
       //n = n.filter(o => !unitsByPos[posKey(o)]);
@@ -141,12 +143,16 @@ var unitObjs = {
         enemy = undefined;
       }
       if(enemy) {
+        if(this.energy > 20) {
         var enemyHealth = ss.get(['units', enemy, 'health']);
         ss.set(['units', enemy, 'health'], enemyHealth - 25);
         console.log('player attack', enemy, enemyHealth, 
             ss.get(['units', enemy, 'health']));
         
-      } else if(pos) {
+          this.energy -= 20;
+        }
+      } else if(this.energy> 15 && pos && dist2(pos, this.next) > 0) {
+        this.energy -= 15;
         this.next = pos;
         this.next.t =  Date.now() + msPerTurn;
       }
@@ -173,15 +179,28 @@ var unitObjs = {
 var unitDefault = {
   health: 100,
   energy: 100,
+  damage: 10,
   update: function() {
+    this.energy = Math.min(100, this.energy + 10);
+    this.health = Math.min(100, this.health + 1);
     var n = neighbours(this.next);
     n = n.filter(o => getTile(o).passable);
+    var player = n.filter(o => unitsByPos[posKey(o)] === 'player')[0];
     n = n.filter(o => !unitsByPos[posKey(o)]);
     var pos = n[Math.random() * n.length |0];
-    if(pos) {
-      this.next = pos;
-      this.next.t =  Date.now() + msPerTurn;
-    }
+    if(player && Math.random() < 0.8 && this.energy > 30) {
+        if(this.energy > 30) {
+        var enemy = 'player';
+        var enemyHealth = ss.get(['units', enemy, 'health']);
+        ss.set(['units', enemy, 'health'], enemyHealth - this.damage * Math.random());
+          this.energy -= 30;
+        }
+      console.log('here');
+      } else if(this.energy > 50 + Math.random() * 30  && pos && dist2(pos, this.next) > 0) {
+        this.energy -= 15;
+        this.next = pos;
+        this.next.t =  Date.now() + msPerTurn;
+      }
   }
 };
 
@@ -342,7 +361,11 @@ function worldUpdate() {
     unit.prev = unit.next;
     unit.prev.t = Date.now();
     unit.update();
-    ss.set(['units', unit.id], unit);
+    if(unit.health > 0) {
+    	ss.set(['units', unit.id], unit);
+    } else {
+    	ss.set(['units', unit.id]);
+    }
     unitsByPos[posKey(unit.next)] = unit.id;
   });
 }

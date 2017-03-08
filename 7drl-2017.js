@@ -8,7 +8,7 @@
 // and uses graphics from <https://wesnoth.org>,
 
 // Information about the app, - used for exporting to github, etc.
-
+ 
 exports.info = {
   name: 'Seven day rogue like',
   github: 'solsort/7drl-2017'
@@ -33,7 +33,7 @@ function clock(name, interval) {
   }
   ss.set(name, Date.now());
 }
-var msPerTurn = 1500;
+var msPerTurn = 800;
 clock('time', 1000/10);
 clock('game.tick', msPerTurn);
 
@@ -128,15 +128,31 @@ var unitObjs = {
     img: 'human-loyalists/sergeant',
     id: 'player',
     update: function() {
+      this.energy = Math.min(100, this.energy + 10);
+      this.health = Math.min(100, this.health + 1);
       var n = neighbours(this.next);
       n = n.filter(o => getTile(o).passable);
-      n = n.filter(o => !unitsByPos[posKey(o)]);
+      //n = n.filter(o => !unitsByPos[posKey(o)]);
       n.push(Object.assign({}, this.next)); 
       n = n.map(p =>  Object.assign(p, {dist:
                         dist2(p, ss.get('game.target'))}));
       n.sort((a,b) => a.dist - b.dist);
       var pos = n[0];
-      if(pos) {
+      var enemy = unitsByPos[posKey(pos)];
+      if(enemy === this.id) {
+        enemy = undefined;
+      }
+      if(enemy) {
+        if(this.energy > 20) {
+        var enemyHealth = ss.get(['units', enemy, 'health']);
+        ss.set(['units', enemy, 'health'], enemyHealth - 25);
+        console.log('player attack', enemy, enemyHealth, 
+            ss.get(['units', enemy, 'health']));
+        
+          this.energy -= 20;
+        }
+      } else if(this.energy> 15 && pos && dist2(pos, this.next) > 0) {
+        this.energy -= 15;
         this.next = pos;
         this.next.t =  Date.now() + msPerTurn;
       }
@@ -161,15 +177,30 @@ var unitObjs = {
 };
 
 var unitDefault = {
+  health: 100,
+  energy: 100,
+  damage: 10,
   update: function() {
+    this.energy = Math.min(100, this.energy + 10);
+    this.health = Math.min(100, this.health + 1);
     var n = neighbours(this.next);
     n = n.filter(o => getTile(o).passable);
+    var player = n.filter(o => unitsByPos[posKey(o)] === 'player')[0];
     n = n.filter(o => !unitsByPos[posKey(o)]);
     var pos = n[Math.random() * n.length |0];
-    if(pos) {
-      this.next = pos;
-      this.next.t =  Date.now() + msPerTurn;
-    }
+    if(player && Math.random() < 0.8 && this.energy > 30) {
+        if(this.energy > 30) {
+        var enemy = 'player';
+        var enemyHealth = ss.get(['units', enemy, 'health']);
+        ss.set(['units', enemy, 'health'], enemyHealth - this.damage * Math.random());
+          this.energy -= 30;
+        }
+      console.log('here');
+      } else if(this.energy > 50 + Math.random() * 30  && pos && dist2(pos, this.next) > 0) {
+        this.energy -= 15;
+        this.next = pos;
+        this.next.t =  Date.now() + msPerTurn;
+      }
   }
 };
 
@@ -217,15 +248,43 @@ UI-design
 // ## Rendering functions
 
 function unitToImg(unit) {
-  return ['img', {
-    src: imgUrl + 'units/' + unit.img + '.png',
+  return ['div', {
     style: {
+      display: 'inline-block',
+      width: 72,
+      height: 72,
+      background: 'url(' + imgUrl + 'units/' + unit.img + '.png)',
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
       top: (unit.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
       left: (unit.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
     }
-  }];
+  },
+          ['span', {style: {
+            position: 'absolute',
+            width: 38,
+            background: '#000',
+            height: 7,
+            top: 59,
+            left: 17,
+          }}],
+          ['span', {style: {
+            position: 'absolute',
+            background: '#0a0',
+            width: unit.energy/ 100 * 36,
+            height: 2,
+            top: 60,
+            left: 18,
+          }}],
+          ['span', {style: {
+            position: 'absolute',
+            background: '#c00',
+            width: unit.health / 100 * 36,
+            height: 2,
+            top: 63,
+            left: 18,
+          }}],
+         ];
 }
 
 function debugImg(o) {
@@ -291,12 +350,14 @@ var unitsByPos = {};
 var prevTime = 0;
 function worldUpdate() {
   var units = Object.values(ss.get('units', {}));
+  units = units.filter(o => o);
   unitsByPos =
          kv2obj(
     units.map(u => [posKey(u.next||{}), u.id])
   );
                                                        
   units.forEach(unit => {
+    unit = ss.get(['units', unit.id]);
     unit.next = unit.next || unit.pos;
     unit.prev = unit.next;
     unit.prev.t = Date.now();
@@ -304,13 +365,18 @@ function worldUpdate() {
     ss.set(['units', unit.id], unit);
     unitsByPos[posKey(unit.next)] = unit.id;
   });
+  units.forEach(unit => {
+    if(unit.health < 0) {
+      ss.set(['units', unit.id]);
+    }
+  });
 }
 worldUpdate();
 
 function frameUpdate() {
   var t = Date.now();
-  Object.values(ss.get('units',{})).forEach(unit => {
-    if(unit.next && unit.prev && t < unit.next.t) {
+  Object.values(ss.get('units',{})).filter(o=>o).forEach(unit => {
+    if(unit && unit.next && unit.prev && t < unit.next.t) {
       var dt = (t - unit.prev.t) / (unit.next.t - unit.prev.t);
       unit.pos.x = (1-dt) * unit.prev.x + dt * unit.next.x;
       unit.pos.y = (1-dt) * unit.prev.y + dt * unit.next.y;
@@ -340,7 +406,7 @@ function start() {
      overflow: 'hidden',
    }} ,
    ['div'].concat(filterPos(Object.values(ss.get('map',{}))).map(terrainToImg)),
-   ['div'].concat(filterPos(Object.values(ss.get('units', {}))).map(unitToImg)),
+   ['div'].concat(filterPos(Object.values(ss.get('units', {})).filter(o=>o)).map(unitToImg)),
    ['div'].concat(filterPos(Object.values(ss.get('map',{})))
      //             .map(o => Object.assign({debug: [o.pos.x, o.pos.y]}, o))
                   .map(debugImg)),
@@ -381,7 +447,6 @@ ss.ready(() => {
   var y = (o.clientY - ss.get('ui.bounds.top'));
   x = (x - 180)/14;
   y = (y - 240)/18;
-  console.log('click', x, y);
   
   ss.set('game.event', o);
   var targetPos = toCoord({

@@ -34,7 +34,7 @@ function clock(name, interval) {
   ss.set(name, Date.now());
 }
 clock('time', 1000/10);
-clock('game.tick', 1000);
+clock('game.tick', 1500);
 
 // Shim
 if(!Object.values) {
@@ -144,6 +144,7 @@ var unitDefault = {
   update: function() {
     var n = neighbours(this.next);
     n = n.filter(o => getTile(o).passable);
+    n = n.filter(o => !unitsByPos[posKey(o)]);
     var pos = n[Math.random() * n.length |0];
     if(pos) {
       this.next = pos;
@@ -152,6 +153,9 @@ var unitDefault = {
   }
 };
 
+function posKey(pos) {
+  return [pos.x, pos.y].toString();
+}
 function getTile(pos) {
   return ss.get(['map', [pos.x, pos.y].toString()],{});
 }
@@ -255,29 +259,31 @@ ss.rerun('frame-update', () => {
 }); 
 
 
+function kv2obj(arr) {
+  var result = {};
+  for(var i = 0; i < arr.length; ++i) {
+    result[arr[i][0]] = arr[i][1];
+  }
+  return result;
+} 
+var unitsByPos = {};
+
+console.log(ss.get('unitsByPos'));
 var prevTime = 0;
 function worldUpdate() {
-  Object.values(ss.get('units',{})).forEach(unit => {
+  var units = Object.values(ss.get('units', {}));
+  unitsByPos =
+         kv2obj(
+    units.map(u => [posKey(u.next||{}), u.id])
+  );
+                                                       
+  units.forEach(unit => {
     unit.next = unit.next || unit.pos;
     unit.prev = unit.next;
     unit.prev.t = Date.now();
     unit.update();
-    /*
-    if(unit.id === 'player') {
-      unit.next = {
-        x: ss.get('game.target.x', unit.next.x),
-        y: ss.get('game.target.y', unit.next.y),
-        t: Date.now() + 1000,
-      };
-    } else {
-      unit.next = {
-        x: unit.prev.x + Math.random() * 4 - 2,
-        y: unit.prev.y + Math.random() * 4 - 2,
-        t: Date.now() + 1000,
-      };
-    }
-    */
     ss.set(['units', unit.id], unit);
+    unitsByPos[posKey(unit.next)] = unit.id;
   });
 }
 worldUpdate();

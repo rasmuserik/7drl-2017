@@ -410,7 +410,7 @@ function start() {
      onClick: ss.event('click', {extract: ['clientX', 'clientY']}),
      //onMouseDown: ss.event('click', {extract: ['clientX', 'clientY']}),
      //onTouchStart: ss.event('click', {extract: ['touches.0']}),
-   style: {position:'absolute', background: background, width: '100%', height: '100%'}},
+   style: {position:'relative', background: background}},
    ['div', { style: {
      display: 'inline-block', 
      width: 360,

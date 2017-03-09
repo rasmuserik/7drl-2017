@@ -73,6 +73,8 @@ function handleMap(m) {
     }
   }
   ss.set('map', map);
+  ss.set('game.target.x', ss.get('units.player.pos.x'));
+  ss.set('game.target.y', ss.get('units.player.pos.y'));
   console.log(ss.get([]));
   start();
 }
@@ -125,11 +127,13 @@ function dist2(a,b) {
 }
 var unitObjs = {
   p: {
+    health: 100,
     img: 'human-loyalists/sergeant',
     id: 'player',
     update: function() {
-      this.energy = Math.min(100, this.energy + 10);
-      this.health = Math.min(100, this.health + 1);
+      this.maxHealth = Math.max(this.health, this.maxHealth || 0);
+      this.energy = Math.min(100, this.energy + 15);
+      this.health = Math.min(100, this.health + 2);
       var n = neighbours(this.next);
       n = n.filter(o => getTile(o).passable);
       //n = n.filter(o => !unitsByPos[posKey(o)]);
@@ -143,16 +147,16 @@ var unitObjs = {
         enemy = undefined;
       }
       if(enemy) {
-        if(this.energy > 20) {
+        if(this.energy > 30) {
         var enemyHealth = ss.get(['units', enemy, 'health']);
-        ss.set(['units', enemy, 'health'], enemyHealth - 25);
+        ss.set(['units', enemy, 'health'], enemyHealth - 40 * Math.random());
         console.log('player attack', enemy, enemyHealth, 
             ss.get(['units', enemy, 'health']));
         
-          this.energy -= 20;
+          this.energy -= 30;
         }
-      } else if(this.energy> 15 && pos && dist2(pos, this.next) > 0) {
-        this.energy -= 15;
+      } else if(this.energy> 25 && pos && dist2(pos, this.next) > 0) {
+        this.energy -= 25;
         this.next = pos;
         this.next.t =  Date.now() + msPerTurn;
       }
@@ -166,23 +170,30 @@ var unitObjs = {
     }
   },
   d: {
+    health: 200,
+    damage: 10,
     img: 'dwarves/fighter'
   },
   w: {
+    health: 100,
+    damage: 20,
     img: 'goblins/direwolver'
   },
   s: {
+    health: 30,
+    damage: 30,
     img: 'undead-skeletal/deathblade'
   }
 };
 
 var unitDefault = {
-  health: 100,
+  health: 30,
   energy: 100,
   damage: 10,
   update: function() {
+    this.maxHealth = Math.max(this.health, this.maxHealth | 0);
     this.energy = Math.min(100, this.energy + 10);
-    this.health = Math.min(100, this.health + 1);
+    this.health = Math.min(this.maxHealth, this.health + 1);
     var n = neighbours(this.next);
     n = n.filter(o => getTile(o).passable);
     var player = n.filter(o => unitsByPos[posKey(o)] === 'player')[0];
@@ -260,7 +271,7 @@ function unitToImg(unit) {
       left: (unit.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
     }
   },
-          ['span', {style: {
+           ['span', {style: {
             position: 'absolute',
             width: 38,
             background: '#000',
@@ -279,7 +290,7 @@ function unitToImg(unit) {
           ['span', {style: {
             position: 'absolute',
             background: '#c00',
-            width: unit.health / 100 * 36,
+            width: unit.health / unit.maxHealth * 36,
             height: 2,
             top: 63,
             left: 18,

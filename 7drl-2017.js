@@ -8,6 +8,8 @@
 // and uses graphics from <https://wesnoth.org>,
 
 // Information about the app, - used for exporting to github, etc.
+var gameWidth = 468;
+var gameHeight = 624;
  
 exports.info = {
   name: 'Seven day rogue like',
@@ -270,8 +272,8 @@ function unitToImg(unit) {
       background: 'url(' + imgUrl + 'units/' + unit.img + '.png)',
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: (unit.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
-      left: (unit.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
+      top: (unit.pos.y - ss.get('units.player.pos.y')) * 36 + gameHeight / 2,
+      left: (unit.pos.x - ss.get('units.player.pos.x')) * 27 + gameWidth / 2,
     }
   },
            ['span', {style: {
@@ -311,8 +313,8 @@ function debugImg(o) {
       textAlign: 'center',
       fontSize: 10,
       textShadow: '1px 1px 2px black',
-      top: (o.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
-      left: (o.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
+      top: (o.pos.y - ss.get('units.player.pos.y')) * 36 + gameHeight / 2,
+      left: (o.pos.x - ss.get('units.player.pos.x')) * 27 + gameWidth / 2,
     }
   }, (o.debug || "").toString()];
 }
@@ -324,8 +326,8 @@ function terrainToImg(terrain) {
       onClick: ss.event('increment', {data: terrain}),
       position: 'absolute',
       transform: 'translate(-50%,-50%)',
-      top: (terrain.pos.y - ss.get('units.player.pos.y')) * 36 + 240,
-      left: (terrain.pos.x - ss.get('units.player.pos.x')) * 27 + 180,
+      top: (terrain.pos.y - ss.get('units.player.pos.y')) * 36 + gameHeight / 2,
+      left: (terrain.pos.x - ss.get('units.player.pos.x')) * 27 + gameWidth / 2,
     }
   }];
 }
@@ -335,7 +337,7 @@ function filterPos(objs) {
   return objs.filter(o => {
     var dx = o.pos.x - p.x | 0;
     var dy = o.pos.y - p.y | 0;
-    return dx * dx + dy * dy < 60;
+    return dx * dx + dy * dy < gameWidth*gameHeight * 0.0003;
   });
 }
 
@@ -413,8 +415,8 @@ function start() {
    style: {position:'relative', background: background}},
    ['div', { style: {
      display: 'inline-block', 
-     width: 360,
-     height: 480, 
+     width: gameWidth,
+     height: gameHeight, 
      position: 'absolute',
      top: 0,
      left: 0,
@@ -434,7 +436,10 @@ function start() {
    ['div'].concat(filterPos(Object.values(ss.get('map',{})))
      //             .map(o => Object.assign({debug: [o.pos.x, o.pos.y]}, o))
                   .map(debugImg)),
-   ['img', {src: '//7drl-2017.solsort.com/shadow.png', style: {position: 'absolute'}}],
+   ['img', {src: '//7drl-2017.solsort.com/shadow.png', 
+            style: {
+              width: 468,
+              position: 'absolute'}}],
    ],
    ['div', {style: {
      position: 'absolute', 
@@ -469,8 +474,8 @@ ss.ready(() => {
  ss.handle('click', o => {
   var x = (o.clientX - ss.get('ui.bounds.left'));
   var y = (o.clientY - ss.get('ui.bounds.top'));
-  x = (x - 180)/14;
-  y = (y - 240)/18;
+  x = (x - (gameWidth / 2))/14;
+  y = (y - (gameHeight / 2))/18;
   
   ss.set('game.event', o);
   var targetPos = toCoord({

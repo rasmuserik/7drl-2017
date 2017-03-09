@@ -187,10 +187,13 @@ var unitObjs = {
 };
 
 var unitDefault = {
-  health: 30,
+  health: 30, 
   energy: 100,
   damage: 10,
   update: function() {
+    if(this.health < 0) {
+      return;
+    }
     this.maxHealth = Math.max(this.health, this.maxHealth | 0);
     this.energy = Math.min(100, this.energy + 10);
     this.health = Math.min(this.maxHealth, this.health + 1);
@@ -377,8 +380,9 @@ function worldUpdate() {
     unitsByPos[posKey(unit.next)] = unit.id;
   });
   units.forEach(unit => {
-    if(unit.health < 0) {
+    if(unit.health < 0 && unit.id !== 'player') {
       ss.set(['units', unit.id]);
+      ss.set('game.kills', ss.get('game.kills', 0) + 1);
     }
   });
 }
@@ -417,7 +421,16 @@ function start() {
      overflow: 'hidden',
    }} ,
    ['div'].concat(filterPos(Object.values(ss.get('map',{}))).map(terrainToImg)),
-   ['div'].concat(filterPos(Object.values(ss.get('units', {})).filter(o=>o)).map(unitToImg)),
+   ss.get('units.player.health') > 0 ?
+   ['div'].concat(filterPos(Object.values(ss.get('units', {})).filter(o=>o)).map(unitToImg))
+    : ['div', {style: {
+        position: 'absolute', 
+        textAlign: 'center',
+        top: 160,
+        left: 107,
+        color: 'black',
+        textShadow: '2px 2px 3px red',
+    }}, ['h1', 'Game over'], "Reload to play again", ['p'], 'Kills: ', ss.get('game.kills', 0)] ,
    ['div'].concat(filterPos(Object.values(ss.get('map',{})))
      //             .map(o => Object.assign({debug: [o.pos.x, o.pos.y]}, o))
                   .map(debugImg)),

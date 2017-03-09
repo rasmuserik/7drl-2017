@@ -8,8 +8,13 @@
 // and uses graphics from <https://wesnoth.org>,
 
 // Information about the app, - used for exporting to github, etc.
+
+var gameWidth = 360;
+var gameHeight = 480;
+/*
 var gameWidth = 468;
 var gameHeight = 624;
+*/
  
 exports.info = {
   name: 'Seven day rogue like',
@@ -337,7 +342,7 @@ function filterPos(objs) {
   return objs.filter(o => {
     var dx = o.pos.x - p.x | 0;
     var dy = o.pos.y - p.y | 0;
-    return dx * dx + dy * dy < gameWidth*gameHeight * 0.0003;
+    return dx * dx + dy * dy < gameWidth*gameHeight * 0.00035;
   });
 }
 
@@ -438,7 +443,8 @@ function start() {
                   .map(debugImg)),
    ['img', {src: '//7drl-2017.solsort.com/shadow.png', 
             style: {
-              width: 468,
+              width: gameWidth,
+              height: gameHeight,
               position: 'absolute'}}],
    ],
    ['div', {style: {

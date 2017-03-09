@@ -2,7 +2,8 @@
 <html>
   <head>
     <title>solsort.com - 7 Day Rogue Like - 2017</title>
-    <meta name="viewport" content="user-scalable=no, width=360">
+    <meta name="viewport" content="user-scalable=no, width=468">
+    <!--meta name="viewport" content="user-scalable=no, width=360"-->
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,8 +14,23 @@
   </head>
   <body>
     <center>
-    <p>Interaction experiment and<br>Simple game engine prototype<br>made from scratch<br>during 7DRL 2017.<br><br>Graphics from Wesnoth<br>Made with <a href=https://appedit.solsort.com/?page=edit&github=solsort/7drl-2017>appedit.solsort.com</a></p>
-    <p><span id="solsort-ui" style=text-align:left;display:inline-block;width:360px;height:480px></span></p>
+      <h1>7 day<br>Rogue-like</h1>
+    <div><span id="solsort-ui" style=text-align:left;display:inline-block;width:360px;height:480px></span></div>
+      <p>Interaction experiment and<br>simple game engine prototype<br>made from scratch<br>during 7DRL 2017.</p>
+      <p>Objective: kill all the enemies.<br>
+      - easy when you play tactically.</p>
+      <div>
+        <p>Works in latest Firefox/Safari/Chrome.<br>
+        Designed for landscape-oriented mobile.</p>
+    <div style=display:inline-block;text-align:justify;max-width:340px;hyphens:auto;>
+      <p>This prototype experiments with two things:</p>
+        <p>Fusion between turn-based and real-time interaction. Each "turn" in the game takes ca. 1 second, and you have energy that recharge over time, - so it makes sense not to move every turn. Making it discreet in this way makes it more tactical, - similar to traditional role playing games, - while preserving the interactive elements. This concept should/would also work very well for multiplayer on mobile(high-latency) clients. The interaction could be made more smooth if the player pretends to move immediately slowly on mousedown/touchstart in the desired direction, rather than wait for the next turn to start.
+        <p>The game is designed such that the layout fits hand-held mobile phones, to test usability of such a design. The 7x7 tiles works well for touch interaction on small phones, and is large enough that you feel it matches the field of view. On a 320px-width device a 7x7 tile is &gt;45 pixels wide, and a 9x9 tile is &gt;34 pixels wide. 9x9 may be a better choice if fog-of-war is enabled.
+      <p>
+    </div>
+      </div>
+      <p>Total hours used: 17
+    <br>Graphics from Wesnoth<br>Made with <a href=https://appedit.solsort.com/?page=edit&github=solsort/7drl-2017>appedit.solsort.com</a></p>
     </center>
     <script src=https://unpkg.com/direape@0.2></script>
     <script src=https://unpkg.com/reun@0.2></script>

@@ -21,7 +21,7 @@ exports.info = {
   github: 'solsort/7drl-2017'
 };
 
-var ss = require('solsort');
+var ss = require('solsort@0.2');
 
 var cdnHost = "https://cdn.rawgit.com/";
 var cdnUrl = cdnHost + "wesnoth/wesnoth/a9d014665673beb2bd4ad2c0d0e3a1f019e920bc/";
